@@ -8,8 +8,8 @@
 
 //////////////Wifi/////////////////
 /* Set these to your desired credentials. */
-const char *ssid = "mySSID";  //ENTER YOUR WIFI SETTINGS
-const char *password = "myPassword";
+const char *ssid = "SSID";  
+const char *password = "MYCOOLPASSWORD";
 
 //Web/Server address to read/write from 
 const char *host = "gracedb.ligo.org";
@@ -108,7 +108,7 @@ void loop() {
     String Link;
   
     //GET Data
-    Link = "/latest/";
+    Link = "/superevents/public/O3/";
   
     Serial.print("requesting URL: ");
     Serial.println(host+Link);
@@ -148,17 +148,6 @@ void loop() {
 void simulateWave() {
   Serial.println("New event, simulating...");
   digitalWrite(2, LOW);
-  delay(200);
-  digitalWrite(2, HIGH);
-  delay(200);
-  digitalWrite(2, LOW);
-  delay(200);
-  digitalWrite(2, HIGH);
-  delay(200);
-  digitalWrite(2, LOW);
-  delay(200);
-  digitalWrite(2, HIGH);
-  delay(200);
 }
 
 int parseLine(char *buff) {
@@ -169,7 +158,8 @@ int parseLine(char *buff) {
   byte matchFound = 0;
   ms.Target (buff);  // set its address
 
-  char result = ms.Match("<td><a href=\"/superevents/(%a%d+%a*)");
+//  char result = ms.Match("<td><a href=\"/superevents/(%a%d+%a*)");
+  char result = ms.Match("<a href=\"/superevents/(%a%d+%a*)/view/");
   if (result > 0) {
     matchFound = 1;
     ms.GetCapture(match, 0);
