@@ -8,8 +8,8 @@
 
 //////////////Wifi/////////////////
 /* Set these to your desired credentials. */
-const char *ssid = "Sonic-4251";  //ENTER YOUR WIFI SETTINGS
-const char *password = "4x8wwb45p43v";
+const char *ssid = "mySSID";  //ENTER YOUR WIFI SETTINGS
+const char *password = "myPassword";
 
 //Web/Server address to read/write from 
 const char *host = "gracedb.ligo.org";
