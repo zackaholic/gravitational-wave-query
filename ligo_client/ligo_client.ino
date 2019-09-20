@@ -8,8 +8,8 @@
 
 //////////////Wifi/////////////////
 /* Set these to your desired credentials. */
-const char *ssid = "SSID";  
-const char *password = "MYCOOLPASSWORD";
+const char *ssid = "Sonic-4251";  
+const char *password = "4x8wwb45p43v";
 
 //Web/Server address to read/write from 
 const char *host = "gracedb.ligo.org";
@@ -28,7 +28,7 @@ char savedID [20];
 ///////////////////////////////////
 
 byte error = 0;
-long queryDelay = 1000 * 60 * 20; //20min
+long queryDelay = 1000 * 10 * 1; //20min
 long lastServerQuery = 0;
 
 /*
@@ -63,14 +63,15 @@ void setup() {
   Serial.println(WiFi.localIP());  //IP address assigned to your ESP
   
   EEPROM.begin(20);
-
+  
   readID(savedID, 20);
 //  Serial.println("\n");
 //  Serial.print("Stored ID: ");
 //  Serial.println(savedID);
 
-  pinMode(2, OUTPUT);
-  digitalWrite(2, HIGH);
+  pinMode(13, OUTPUT);
+  analogWriteFreq(20000);
+  analogWrite(13, 0);
 }
 
 //=======================================================================
@@ -146,8 +147,26 @@ void loop() {
 //=======================================================================
 
 void simulateWave() {
-  Serial.println("New event, simulating...");
-  digitalWrite(2, LOW);
+  float scale = 1.07;//1 + (float)random(7, 8 ) / 100;
+
+   //startup voltage
+  float rate = 500;
+  analogWrite(13, (int)rate);
+  delay(100);
+  rate = 200;
+  analogWrite(13, (int)rate);
+  for (int i = 0; i < 500; i++) {
+    rate *= scale;
+    if (rate > 1023) {
+      rate = 1023;
+      analogWrite(13, (int)rate);
+      delay(200);
+      break;
+    }
+    analogWrite(13, (int)rate);
+    delay(100);
+  }
+  analogWrite(13, 0);
 }
 
 int parseLine(char *buff) {
