@@ -8,8 +8,8 @@
 
 //////////////Wifi/////////////////
 /* Set these to your desired credentials. */
-const char *ssid = "Sonic-4251";  
-const char *password = "4x8wwb45p43v";
+const char *ssid = "SSID";  
+const char *password = "PASSPASS";
 
 //Web/Server address to read/write from 
 const char *host = "gracedb.ligo.org";
@@ -28,7 +28,7 @@ char savedID [20];
 ///////////////////////////////////
 
 byte error = 0;
-long queryDelay = 1000 * 10 * 1; //20min
+long queryDelay = 1000 * 60 * 20; //20min
 long lastServerQuery = 0;
 
 /*
@@ -40,6 +40,11 @@ long lastServerQuery = 0;
 
 void setup() {
   delay(1000);
+  
+  pinMode(13, OUTPUT);
+  analogWriteFreq(20000);
+  analogWrite(13, 0);
+  
   Serial.begin(115200);
   WiFi.mode(WIFI_OFF);        //Prevents reconnection issue (taking too long to connect)
   delay(1000);
@@ -65,13 +70,6 @@ void setup() {
   EEPROM.begin(20);
   
   readID(savedID, 20);
-//  Serial.println("\n");
-//  Serial.print("Stored ID: ");
-//  Serial.println(savedID);
-
-  pinMode(13, OUTPUT);
-  analogWriteFreq(20000);
-  analogWrite(13, 0);
 }
 
 //=======================================================================
@@ -189,9 +187,9 @@ int parseLine(char *buff) {
     Serial.println(savedID);
   
     if (strcmp(match, savedID) == 0) {
-      Serial.println("Strings are equal");
+      Serial.println("Ignoring repeat ID");
     } else {
-      Serial.println("Strings are unequal, storing new ID");
+      Serial.println("New ID, simulating wave");
       storeID(match);
       strcpy(savedID, match);
       simulateWave();
