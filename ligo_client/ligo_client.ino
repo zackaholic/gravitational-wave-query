@@ -9,7 +9,7 @@
 //////////////Wifi/////////////////
 /* Set these to your desired credentials. */
 const char *ssid = "SSID";  
-const char *password = "PASSPASS";
+const char *password = "passpasspass";
 
 //Web/Server address to read/write from 
 const char *host = "gracedb.ligo.org";
@@ -30,6 +30,11 @@ char savedID [20];
 byte error = 0;
 long queryDelay = 1000 * 60 * 20; //20min
 long lastServerQuery = 0;
+byte enablePin = 13;
+byte manualControlPin = 2;
+int motorSpeed = 0;
+int motorSpeedIncrement = 255;
+byte state = 2;
 
 /*
  * error codes:
@@ -77,70 +82,103 @@ void setup() {
 //=======================================================================
 
 void loop() {
-  if (millis() - lastServerQuery > queryDelay) {
-    lastServerQuery = millis();
-    
-    WiFiClientSecure httpsClient;    //Declare object of class WiFiClient
-  
-    Serial.println(host);
-  
-    Serial.printf("Using fingerprint '%s'\n", fingerprint);
-    httpsClient.setFingerprint(fingerprint);
-    httpsClient.setTimeout(15000); // 15 Seconds
-    delay(1000);
-    
-    Serial.print("HTTPS Connecting");
-    int r=0; //retry counter
-    while((!httpsClient.connect(host, httpsPort)) && (r < 30)){
-        delay(100);
-        Serial.print(".");
-        r++;
-    }
-    if(r==30) {
-      Serial.println("Connection failed");
-      error = 2;
-    }
-    else {
-      Serial.println("Connected to web");
-    }
-    
-    String Link;
-  
-    //GET Data
-    Link = "/superevents/public/O3/";
-  
-    Serial.print("requesting URL: ");
-    Serial.println(host+Link);
-  
-    httpsClient.print(String("GET ") + Link + " HTTP/1.1\r\n" +
-                 "Host: " + host + "\r\n" +               
-                 "Connection: close\r\n\r\n");
-  
-    Serial.println("request sent");
-                    
-    while (httpsClient.connected()) {
-      String line = httpsClient.readStringUntil('\n');
-      if (line == "\r") {
-        Serial.println("headers received:");
-        break;
+  switch (state) {
+    case 1:
+      //manual control
+      if (digitalRead(manualControlPin) == LOW) {
+        delay(20);
+        if (digitalRead(manualControlPin) == LOW) {
+          //wait for release
+          while(digitalRead(manualControlPin) == LOW);
+          motorSpeed += motorSpeedIncrement;
+          if (motorSpeed > 1023) {
+            motorSpeed = 0;
+            state = 2;
+          }
+          analogWrite(enablePin, motorSpeed);
+        }
       }
-    }
-  
-    Serial.println("reply was:");
-    Serial.println("==========");
-  
-    while(httpsClient.available()){        
-      httpsClient.readBytesUntil('\n', line, 100);
-  
-      //stop parsing after first match
-      if (parseLine(line) == 0) {
-        break;
+      break;
+    case 2:
+      //poll for motor
+      if (digitalRead(manualControlPin) == LOW) {
+        delay(20);
+        if (digitalRead(manualControlPin) == LOW) {
+          //wait for release
+          while(digitalRead(manualControlPin) == LOW);
+          motorSpeed += motorSpeedIncrement;
+          analogWrite(enablePin, motorSpeed);
+          state = 1;      
+        }
       }
-    }
-    httpsClient.flush();
-    Serial.println("==========");
-    Serial.println("closing connection");
-  }    
+      //poll for event
+      if (millis() - lastServerQuery > queryDelay) {
+        lastServerQuery = millis();
+        
+        WiFiClientSecure httpsClient;    //Declare object of class WiFiClient
+      
+        Serial.println(host);
+      
+        Serial.printf("Using fingerprint '%s'\n", fingerprint);
+        httpsClient.setFingerprint(fingerprint);
+        httpsClient.setTimeout(15000); // 15 Seconds
+        delay(1000);
+        
+        Serial.print("HTTPS Connecting");
+        int r=0; //retry counter
+        while((!httpsClient.connect(host, httpsPort)) && (r < 30)){
+            delay(100);
+            Serial.print(".");
+            r++;
+        }
+        if(r==30) {
+          Serial.println("Connection failed");
+          error = 2;
+        }
+        else {
+          Serial.println("Connected to web");
+        }
+        
+        String Link;
+      
+        //GET Data
+        Link = "/latest/";
+      
+        Serial.print("requesting URL: ");
+        Serial.println(host+Link);
+      
+        httpsClient.print(String("GET ") + Link + " HTTP/1.1\r\n" +
+                     "Host: " + host + "\r\n" +               
+                     "Connection: close\r\n\r\n");
+      
+        Serial.println("request sent");
+                        
+        while (httpsClient.connected()) {
+          String line = httpsClient.readStringUntil('\n');
+          if (line == "\r") {
+            Serial.println("headers received:");
+            break;
+          }
+        }
+      
+        Serial.println("reply was:");
+        Serial.println("==========");
+      
+        while(httpsClient.available()){        
+          httpsClient.readBytesUntil('\n', line, 100);
+      
+          //stop parsing after first match
+          if (parseLine(line) == 0) {
+            break;
+          }
+        }
+        httpsClient.flush();
+        Serial.println("==========");
+        Serial.println("closing connection");
+      }    
+      break;
+  }
+
 }
 //=======================================================================
 
@@ -149,22 +187,22 @@ void simulateWave() {
 
    //startup voltage
   float rate = 500;
-  analogWrite(13, (int)rate);
+  analogWrite(enablePin, (int)rate);
   delay(100);
   rate = 200;
-  analogWrite(13, (int)rate);
+  analogWrite(enablePin, (int)rate);
   for (int i = 0; i < 500; i++) {
     rate *= scale;
     if (rate > 1023) {
       rate = 1023;
-      analogWrite(13, (int)rate);
+      analogWrite(enablePin, (int)rate);
       delay(200);
       break;
     }
-    analogWrite(13, (int)rate);
+    analogWrite(enablePin, (int)rate);
     delay(100);
   }
-  analogWrite(13, 0);
+  analogWrite(enablePin, 0);
 }
 
 int parseLine(char *buff) {
